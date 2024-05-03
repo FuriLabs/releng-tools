@@ -293,6 +293,8 @@ if [ -e "debian/source/format" ] && grep -q "quilt" debian/source/format; then
 	# Limitation of this approach is that we HAVE to check out eventual
 	# new submodules :(
 	if git checkout ${BRANCH} .gitmodules; then
+		git submodule init
+
 		for submodule in $(git submodule status | awk '{ print $2 }'); do
 			git checkout ${BRANCH} ${submodule}
 		done
