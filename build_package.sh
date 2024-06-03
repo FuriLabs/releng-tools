@@ -352,7 +352,8 @@ info "Building package"
 ARGS="--no-lintian -d -sa --no-sign --jobs=$(nproc)"
 if [ "${RELENG_FULL_BUILD}" == "yes" ]; then
 	if [ "${binary_diff}" == "yes" ]; then
-		ARGS="${ARGS} -b"
+		# upstream mismatch, build binary and any arch
+		ARGS="${ARGS} --build=binary,any"
 	else
 		# Full build, build source,any,all
 		ARGS="${ARGS} -F"
