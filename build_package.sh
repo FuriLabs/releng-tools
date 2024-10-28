@@ -247,7 +247,7 @@ fi
 # Enable staging repository for staging builds
 if [ "${BUILD_TYPE}" == "staging" ] && [ "${IS_CONTAINER}" != "true" ]; then
 	info "Enabling staging repository"
-	apt-get --yes install furios-apt-config-staging
+	apt-get --yes install furios-apt-config-staging furios-apt-config-debian-staging
 fi
 
 # Refresh APT database
