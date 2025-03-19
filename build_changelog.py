@@ -608,4 +608,4 @@ if __name__ == "__main__":
 		for entry in pkg.iter_changelog():
 			f.write(entry)
 
-
+	repository.git.clear_cache()
