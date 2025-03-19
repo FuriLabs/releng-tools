@@ -1,13 +1,15 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: releng-tools
-Source: https://github.com/droidian-releng/releng-tools
+Source: https://github.com/furilabs/releng-tools
 
 Files: *
 Copyright: 2020 Eugenio "g7" Paolantonio <me@medesimo.eu>
+           2025 Bardia Moshiri <bardia@furilabs.com>
 License: BSD-3-clause
 
 Files: debian/*
 Copyright: 2020 Eugenio "g7" Paolantonio <me@medesimo.eu>
+           2025 Bardia Moshiri <bardia@furilabs.com>
 License: BSD-3-clause
 
 License: BSD-3-clause
