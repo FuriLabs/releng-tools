@@ -167,9 +167,24 @@ if [ -n "${EXTRA_REPOS}" ]; then
 	done
 fi
 
+# Take care of extra packages that need installation
+if [ -n "${EXTRA_PACKAGES}" ]; then
+	apt-get update
+
+	IFS="|"
+	packages=($(echo "${EXTRA_PACKAGES}"))
+	for package in "${packages[@]}"; do
+		info "Installing ${package}"
+		apt-get --yes install ${package}
+	done
+fi
+
 # Enable staging repository for staging builds
 if [ "${BUILD_TYPE}" == "staging" ] && [ "${IS_CONTAINER}" != "true" ]; then
 	info "Enabling staging repository"
+	apt-get --yes install furios-apt-config-staging furios-apt-config-debian-staging
+elif [ -n "${FORCE_STAGING}" ]; then
+	info "Forcing staging repository"
 	apt-get --yes install furios-apt-config-staging furios-apt-config-debian-staging
 fi
 
