@@ -186,6 +186,8 @@ if [ "${BUILD_TYPE}" == "staging" ] && [ "${IS_CONTAINER}" != "true" ]; then
 elif [ -n "${FORCE_STAGING}" ]; then
 	info "Forcing staging repository"
 	apt-get --yes install furios-apt-config-staging furios-apt-config-debian-staging
+	apt-get update
+	apt-get upgrade --allow-downgrades --assume-yes
 fi
 
 # Refresh APT database
