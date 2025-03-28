@@ -2,6 +2,7 @@
 #
 # releng-build-package - builds a Debian package (to be used in CI systems)
 # Copyright (C) 2020 Eugenio "g7" Paolantonio <me@medesimo.eu>
+# Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -51,8 +52,8 @@ fi
 [ -n "${CI}" ] || error "This script must run inside a CI environment or in an OCI container!"
 
 # Set some defaults. These can be specified in the CI build environment
-[ -n "${RELENG_TAG_PREFIX}" ] || export RELENG_TAG_PREFIX="droidian/"
-[ -n "${RELENG_LEGACY_TAG_PREFIX}" ] || export RELENG_LEGACY_TAG_PREFIX="hybris-mobian/"
+[ -n "${RELENG_TAG_PREFIX}" ] || export RELENG_TAG_PREFIX="furios/"
+[ -n "${RELENG_TAG_LEGACY_PREFIX}" ] || export RELENG_TAG_LEGACY_PREFIX="droidian/"
 [ -n "${RELENG_BRANCH_PREFIX}" ] || export RELENG_BRANCH_PREFIX="feature/"
 [ -n "${RELENG_FULL_BUILD}" ] || export RELENG_FULL_BUILD="no"
 
@@ -71,83 +72,7 @@ git config --global --add safe.directory ${PWD} || true
 # Default build type is "feature-branch", per-CI logic should determine
 # which build type is by looking at available data.
 BUILD_TYPE="feature-branch"
-if [ "${HAS_JOSH_K_SEAL_OF_APPROVAL}" == "true" ]; then
-	# Travis CI
-
-	CI_CONFIG="./travis.yml"
-	BRANCH="${TRAVIS_BRANCH}"
-	COMMIT="${TRAVIS_COMMIT}"
-	if [ -n "${TRAVIS_TAG}" ]; then
-		TAG="${TRAVIS_TAG}"
-		# Fetch the release name from the tag, and use that as comment,
-		# appending the -production suffix
-		COMMENT=$(echo "${TAG//${RELENG_TAG_PREFIX}/}" | cut -d "/" -f1).production
-		BUILD_TYPE="production"
-	else
-		# Use the branch name as the comment, append -pr if it's a pull request
-		COMMENT="${TRAVIS_BRANCH}"
-		# If the branch doesn't start with feature/..., this is going to be
-		# a staging build
-		if [[ "${TRAVIS_BRANCH}" != feature/* ]]; then
-			BUILD_TYPE="staging"
-		fi
-		if [ "${TRAVIS_EVENT_TYPE}" == "pull_request" ]; then
-			COMMENT="${COMMENT}.pull.request.test"
-		fi
-	fi
-elif [ "${DRONE}" == "true" ]; then
-	# Drone CI
-
-	CI_CONFIG="debian/drone.star"
-	BRANCH="${DRONE_BRANCH}"
-	COMMIT="${DRONE_COMMIT}"
-	if [ -n "${DRONE_TAG}" ]; then
-		TAG="${DRONE_TAG}"
-		# Fetch the release name from the tag, and use that as comment,
-		# appending the -production suffix
-		COMMENT=$(echo "${TAG//${RELENG_TAG_PREFIX}/}" | cut -d "/" -f1).production
-		BUILD_TYPE="production"
-	else
-		# Use the branch name as the comment, append -pr if it's a pull request
-		COMMENT="${DRONE_BRANCH}"
-		# If the branch doesn't start with feature/..., this is going to be
-		# a staging build
-		if [[ "${DRONE_BRANCH}" != feature/* ]]; then
-			BUILD_TYPE="staging"
-		fi
-		if [ -n "${DRONE_PULL_REQUEST}" ]; then
-			COMMENT="${COMMENT}.pull.request.test"
-		fi
-	fi
-elif [ "${AZURE_PIPELINES}" == "true" ]; then
-	# CI and AZURE_PIPELINES must be set in the pipeline yaml, they
-	# are not provided by Azure!
-
-	CI_CONFIG="./debian/azure-pipelines.yml"
-	BRANCH="${BUILD_SOURCEBRANCH/refs\/heads\//}"
-	COMMIT="${BUILD_SOURCEVERSION}"
-	if [[ "${BUILD_SOURCEBRANCH}" == refs/tags/* ]]; then
-		TAG="${BUILD_SOURCEBRANCH/refs\/tags\//}"
-		# Fetch the release name from the tag, and use that as the branch
-		# name (we can't reliably get it from azure on tags) and as a comment,
-		# appending the -production suffix
-		BRANCH=$(echo "${TAG//${RELENG_TAG_PREFIX}/}" | cut -d "/" -f1)
-		COMMENT="${BRANCH}.production"
-		BUILD_TYPE="production"
-	else
-		# Use the branch name as the comment, append -pr if it's a pull request
-		COMMENT="${BRANCH}"
-		# If the branch doesn't start with feature/..., this is going to be
-		# a staging build
-		if [[ "${BRANCH}" != feature/* ]]; then
-			BUILD_TYPE="staging"
-		fi
-		if [[ "${BUILD_SOURCEBRANCH}" == refs/pull/* ]]; then
-			# Not supported yet
-			error "Pull Requests are not supported for now with the Azure Pipelines provider"
-		fi
-	fi
-elif [ "${CIRCLECI}" == "true" ]; then
+if [ "${CIRCLECI}" == "true" ]; then
 	# CircleCI
 
 	CI_CONFIG=".circleci/config.yml"
@@ -204,7 +129,7 @@ fi
 # Build debian/changelog
 info "Building changelog from git history"
 
-ARGS="--commit ${COMMIT} --comment ${COMMENT} --tag-prefix ${RELENG_TAG_PREFIX} ${RELENG_LEGACY_TAG_PREFIX} --branch-prefix ${RELENG_BRANCH_PREFIX}"
+ARGS="--commit ${COMMIT} --comment ${COMMENT} --tag-prefix ${RELENG_TAG_PREFIX} ${RELENG_TAG_LEGACY_PREFIX} --branch-prefix ${RELENG_BRANCH_PREFIX}"
 case "${BUILD_TYPE}" in
 	"production")
 		ARGS="${ARGS} --tag ${TAG}"
@@ -213,8 +138,6 @@ case "${BUILD_TYPE}" in
 		ARGS="${ARGS} --branch ${BRANCH}"
 		;;
 esac
-# NOTE: On Travis CI we're stuck to depth 50 unless we unshallow.
-#git fetch --unshallow
 
 if [ "${IS_CONTAINER}" == "true" ]; then
 	# Handle debian/changelog. First try restoring it from git...
