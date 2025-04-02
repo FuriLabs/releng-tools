@@ -193,6 +193,7 @@ fi
 # Refresh APT database
 info "Refreshing APT database"
 apt-get update
+apt-get upgrade --allow-downgrades --assume-yes
 
 # Install build dependencies
 info "Installing build dependencies"
