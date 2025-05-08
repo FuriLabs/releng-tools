@@ -306,6 +306,11 @@ if [ -n "${RELENG_HOST_ARCH}" ]; then
 	ARGS="${ARGS} -a${RELENG_HOST_ARCH}"
 fi
 
+# Mark build as crossbuild for kernels
+if [[ "${package_name}" == linux-* ]]; then
+        export DEB_BUILD_OPTIONS=crossbuildcanrunhostbinaries
+fi
+
 eval debuild "${ARGS}"
 
 # Move artifacts to the correct location if this is a non-native build
