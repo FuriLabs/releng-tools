@@ -18,7 +18,7 @@ Depends: ${misc:Depends},
          git-lfs,
          findutils,
          equivs,
-         devscripts
-Description: Release engineering tools for droidian
- This package contains various tools related to droidian's
+         devscripts,
+Description: Release engineering tools for furios
+ This package contains various tools related to furios's
  release engineering processes.
