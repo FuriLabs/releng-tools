@@ -126,7 +126,7 @@ class SlimPackage:
 		git_repository,
 		commit_hash,
 		tag=None,
-		tag_prefixes=("droidian/",),
+		tag_prefixes=("furios/",),
 		branch=None,
 		branch_prefix="feature/",
 		rolling_release=None,
