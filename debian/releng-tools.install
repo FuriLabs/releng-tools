@@ -1,2 +1,0 @@
-build_changelog.py /usr/lib/releng-tools
-build_package.sh  /usr/lib/releng-tools
