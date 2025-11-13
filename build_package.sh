@@ -139,6 +139,12 @@ case "${BUILD_TYPE}" in
 		;;
 esac
 
+repo_name=$(basename -s .git "$(git config --get remote.origin.url)")
+
+if [[ "${repo_name}" == linux-* ]]; then
+	ARGS="${ARGS} --max-commits 500"
+fi
+
 if [ "${IS_CONTAINER}" == "true" ]; then
 	# Handle debian/changelog. First try restoring it from git...
 	git checkout -- debian/changelog &> /dev/null || \
