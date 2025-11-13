@@ -120,7 +120,8 @@ class SlimPackage:
         branch_prefix="feature/",
         rolling_release=None,
         rolling_release_replacement=None,
-        comment="release"
+        comment="release",
+        max_commits=None,
     ):
         """
         Initialises the class.
@@ -139,6 +140,8 @@ class SlimPackage:
         rolling_release
         :param: comment: a comment that will be included in the package version,
         usually the branch slug. Defaults to 'release'
+        :param: max_commits: if not None, only the last N commits will be
+        included when generating the changelog.
 
         If `tag` is not specified, the nearest tag is used instead. If no tag
         is found, the latest version of an eventual, old debian/changelog is
@@ -154,6 +157,11 @@ class SlimPackage:
         self.rolling_release = rolling_release
         self.rolling_release_replacement = rolling_release_replacement
         self.comment = slugify(comment.replace(self.branch_prefix, ""))
+
+        # Normalize max_commits: non-positive means "no limit"
+        if max_commits is not None and max_commits <= 0:
+            max_commits = None
+        self.max_commits = max_commits
 
         self._name = None
         self._is_native = None
@@ -385,11 +393,14 @@ class SlimPackage:
         entries = OrderedDict()
         entry = None
 
+        processed_commits = 0
+
         for commit in self.git_repository.iter_commits(rev=self.commit_hash):
+            processed_commits += 1
+
             # On shallow clones, the last commit actually has a parent,
             # but we're unable to access it.
-            # Use this information to determine if we should stop
-            # here
+            # Use this information to determine if we should stop here
             if commit.parents:
                 try:
                     commit.parents[0].parents
@@ -398,6 +409,10 @@ class SlimPackage:
                 else:
                     last_commit = False
             else:
+                last_commit = True
+
+            # Enforce max_commits limit, if set
+            if self.max_commits is not None and processed_commits >= self.max_commits:
                 last_commit = True
 
             if (commit.hexsha in tags and not commit.hexsha == self.commit_hash) or last_commit:
@@ -424,7 +439,7 @@ class SlimPackage:
                     entry.contents.setdefault(
                         commit.author.name,
                         []
-                    ).insert(0, commit.message.split("\n")[0]) # Pick up only the first line
+                    ).insert(0, commit.message.split("\n")[0])  # Pick up only the first line
 
                 # Get number of authors
                 authors = len(entry.contents)
@@ -479,9 +494,13 @@ class SlimPackage:
             entry.contents.setdefault(
                 commit.author.name,
                 []
-            ).insert(0, commit.message.split("\n")[0]) # Pick up only the first line
+            ).insert(0, commit.message.split("\n")[0])  # Pick up only the first line
 
-parser = argparse.ArgumentParser(description="Builds a debian/changelog file from a git history tree")
+parser = argparse.ArgumentParser(
+    description=(
+        "Builds a debian/changelog file from a git history tree "
+    )
+)
 parser.add_argument(
     "--commit",
     type=str,
@@ -534,6 +553,11 @@ parser.add_argument(
     default="release",
     help="a slugified comment that is set as version suffix. Defaults to release"
 )
+parser.add_argument(
+    "--max-commits",
+    type=int,
+    help="only include the last N commits when generating the changelog"
+)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -555,7 +579,8 @@ if __name__ == "__main__":
         branch_prefix=args.branch_prefix,
         rolling_release=args.rolling_release,
         rolling_release_replacement=args.rolling_release_replacement,
-        comment=args.comment
+        comment=args.comment,
+        max_commits=args.max_commits,
     )
 
     # Build a version right now, so that we don't worry about (eventually)
