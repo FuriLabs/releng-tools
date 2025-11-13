@@ -30,23 +30,23 @@
 set -e
 
 info() {
-	echo "I: $@"
+    echo "I: $@"
 }
 
 warning() {
-	echo "W: $@" >&2
+    echo "W: $@" >&2
 }
 
 error() {
-	echo "E: $@" >&2
-	exit 1
+    echo "E: $@" >&2
+    exit 1
 }
 
 # Assume we are in 'CI' if running on a container. Also set IS_CONTAINER
 # variable and try to obtain informations on the build from there.
 if [ -z "${CI}" ] && ([ -e /.dockerenv ] || [ -e /run/.containerenv ]); then
-	CI="true"
-	IS_CONTAINER="true"
+    CI="true"
+    IS_CONTAINER="true"
 fi
 
 [ -n "${CI}" ] || error "This script must run inside a CI environment or in an OCI container!"
@@ -73,57 +73,57 @@ git config --global --add safe.directory ${PWD} || true
 # which build type is by looking at available data.
 BUILD_TYPE="feature-branch"
 if [ "${CIRCLECI}" == "true" ]; then
-	# CircleCI
+    # CircleCI
 
-	CI_CONFIG=".circleci/config.yml"
-	BRANCH="${CIRCLE_BRANCH}"
-	COMMIT="${CIRCLE_SHA1}"
-	if [ -n "${CIRCLE_TAG}" ]; then
-		TAG="${CIRCLE_TAG}"
-		# Fetch the release name from the tag, and use that as comment,
-		# appending the -production suffix
-		COMMENT=$(echo "${TAG//${RELENG_TAG_PREFIX}/}" | cut -d "/" -f1).production
-		BUILD_TYPE="production"
-	else
-		# Use the branch name as the comment, append -pr if it's a pull request
-		COMMENT="${CIRCLE_BRANCH}"
-		# If the branch doesn't start with feature/..., this is going to be
-		# a staging build
-		if [[ "${CIRCLE_BRANCH}" != feature/* ]]; then
-			BUILD_TYPE="staging"
-		fi
-		if [ -n "${CIRCLE_PULL_REQUEST}" ]; then
-			COMMENT="${COMMENT}.pull.request.test"
-		fi
-	fi
+    CI_CONFIG=".circleci/config.yml"
+    BRANCH="${CIRCLE_BRANCH}"
+    COMMIT="${CIRCLE_SHA1}"
+    if [ -n "${CIRCLE_TAG}" ]; then
+        TAG="${CIRCLE_TAG}"
+        # Fetch the release name from the tag, and use that as comment,
+        # appending the -production suffix
+        COMMENT=$(echo "${TAG//${RELENG_TAG_PREFIX}/}" | cut -d "/" -f1).production
+        BUILD_TYPE="production"
+    else
+        # Use the branch name as the comment, append -pr if it's a pull request
+        COMMENT="${CIRCLE_BRANCH}"
+        # If the branch doesn't start with feature/..., this is going to be
+        # a staging build
+        if [[ "${CIRCLE_BRANCH}" != feature/* ]]; then
+            BUILD_TYPE="staging"
+        fi
+        if [ -n "${CIRCLE_PULL_REQUEST}" ]; then
+            COMMENT="${COMMENT}.pull.request.test"
+        fi
+    fi
 elif [ "${IS_CONTAINER}" == "true" ]; then
-	# Obtain stuff from the current directory
+    # Obtain stuff from the current directory
 
-	# Note: "production" builds are not supported at the moment.
+    # Note: "production" builds are not supported at the moment.
 
-	BRANCH=$(git rev-parse --abbrev-ref HEAD)
-	COMMIT=$(git rev-parse HEAD)
-	COMMENT="${BRANCH}"
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    COMMIT=$(git rev-parse HEAD)
+    COMMENT="${BRANCH}"
 
-	FORCE_ALLOW_EXTRA_REPOS="yes"
+    FORCE_ALLOW_EXTRA_REPOS="yes"
 
-	# If the branch doesn't start with feature/..., this is going to be
-	# a staging build
-	if [[ "${BRANCH}" != feature/* ]]; then
-		BUILD_TYPE="staging"
-	fi
+    # If the branch doesn't start with feature/..., this is going to be
+    # a staging build
+    if [[ "${BRANCH}" != feature/* ]]; then
+        BUILD_TYPE="staging"
+    fi
 fi
 
 # Install git-lfs if .gitattributes is present
 if [ "${IS_CONTAINER}" != "true" ]; then
-	if [ -e .gitattributes ]; then
-		git lfs install
-		git fetch origin
-		git checkout origin/${BRANCH}
-	fi
+    if [ -e .gitattributes ]; then
+        git lfs install
+        git fetch origin
+        git checkout origin/${BRANCH}
+    fi
 
-	# Always fetch tags
-	git fetch --tags
+    # Always fetch tags
+    git fetch --tags
 fi
 
 # Build debian/changelog
@@ -131,25 +131,25 @@ info "Building changelog from git history"
 
 ARGS="--commit ${COMMIT} --comment ${COMMENT} --tag-prefix ${RELENG_TAG_PREFIX} ${RELENG_TAG_LEGACY_PREFIX} --branch-prefix ${RELENG_BRANCH_PREFIX}"
 case "${BUILD_TYPE}" in
-	"production")
-		ARGS="${ARGS} --tag ${TAG}"
-		;;
-	"feature-branch"|"staging")
-		ARGS="${ARGS} --branch ${BRANCH}"
-		;;
+    "production")
+        ARGS="${ARGS} --tag ${TAG}"
+        ;;
+    "feature-branch"|"staging")
+        ARGS="${ARGS} --branch ${BRANCH}"
+        ;;
 esac
 
 repo_name=$(basename -s .git "$(git config --get remote.origin.url)")
 
 if [[ "${repo_name}" == linux-* ]]; then
-	ARGS="${ARGS} --max-commits 500"
+    ARGS="${ARGS} --max-commits 500"
 fi
 
 if [ "${IS_CONTAINER}" == "true" ]; then
-	# Handle debian/changelog. First try restoring it from git...
-	git checkout -- debian/changelog &> /dev/null || \
-		# Otherwise, remove it altogether
-		rm -f debian/changelog
+    # Handle debian/changelog. First try restoring it from git...
+    git checkout -- debian/changelog &> /dev/null || \
+        # Otherwise, remove it altogether
+        rm -f debian/changelog
 fi
 
 eval releng-build-changelog "${ARGS}"
@@ -161,39 +161,39 @@ package_name=$(echo "${package_info}" | awk '{ print $1 }')
 
 # Add extra repositories if required
 if [ -n "${EXTRA_REPOS}" ]; then
-	if [ "${FORCE_ALLOW_EXTRA_REPOS}" != "yes" ] && [ "${BUILD_TYPE}" != "feature-branch" ]; then
-		error "EXTRA_REPOS is specified but BUILD_TYPE is not 'feature-branch'. Aborting..."
-	fi
+    if [ "${FORCE_ALLOW_EXTRA_REPOS}" != "yes" ] && [ "${BUILD_TYPE}" != "feature-branch" ]; then
+        error "EXTRA_REPOS is specified but BUILD_TYPE is not 'feature-branch'. Aborting..."
+    fi
 
-	IFS="|"
-	repos=($(echo "${EXTRA_REPOS}"))
-	for repo in "${repos[@]}"; do
-			info "Enabling ${repo}"
-			echo "${repo}" >> /etc/apt/sources.list.d/releng-build-package-extra-repos.list
-	done
+    IFS="|"
+    repos=($(echo "${EXTRA_REPOS}"))
+    for repo in "${repos[@]}"; do
+            info "Enabling ${repo}"
+            echo "${repo}" >> /etc/apt/sources.list.d/releng-build-package-extra-repos.list
+    done
 fi
 
 # Take care of extra packages that need installation
 if [ -n "${EXTRA_PACKAGES}" ]; then
-	apt-get update
+    apt-get update
 
-	IFS="|"
-	packages=($(echo "${EXTRA_PACKAGES}"))
-	for package in "${packages[@]}"; do
-		info "Installing ${package}"
-		apt-get --yes install ${package}
-	done
+    IFS="|"
+    packages=($(echo "${EXTRA_PACKAGES}"))
+    for package in "${packages[@]}"; do
+        info "Installing ${package}"
+        apt-get --yes install ${package}
+    done
 fi
 
 # Enable staging repository for staging builds
 if [ "${BUILD_TYPE}" == "staging" ] && [ "${IS_CONTAINER}" != "true" ]; then
-	info "Enabling staging repository"
-	apt-get --yes install furios-apt-config-staging furios-apt-config-debian-staging
+    info "Enabling staging repository"
+    apt-get --yes install furios-apt-config-staging furios-apt-config-debian-staging
 elif [ -n "${FORCE_STAGING}" ]; then
-	info "Forcing staging repository"
-	apt-get --yes install furios-apt-config-staging furios-apt-config-debian-staging
-	apt-get update
-	apt-get upgrade --allow-downgrades --assume-yes
+    info "Forcing staging repository"
+    apt-get --yes install furios-apt-config-staging furios-apt-config-debian-staging
+    apt-get update
+    apt-get upgrade --allow-downgrades --assume-yes
 fi
 
 # Refresh APT database
@@ -214,83 +214,83 @@ rm -f ${package_name}-build-deps_*.*
 current_dir="${PWD}"
 non_native="no"
 if [ -e "debian/source/format" ] && grep -q "quilt" debian/source/format; then
-	non_native="yes"
-	info "Package is non-native"
+    non_native="yes"
+    info "Package is non-native"
 
-	package_orig_version=$(echo "${package_info}" | awk '{ print $2 }' | cut -d- -f1 | sed 's/(//' | cut -d':' -f2-)
+    package_orig_version=$(echo "${package_info}" | awk '{ print $2 }' | cut -d- -f1 | sed 's/(//' | cut -d':' -f2-)
 
-	package_orig_version_tag="${package_orig_version/\~/_}"
+    package_orig_version_tag="${package_orig_version/\~/_}"
 
-	if [ "${BUILD_TYPE}" == "production" ] && [ "${DRONE}" == "true" ]; then
-		# Ensure the branch gets actually downloaded...
-		git fetch origin "+refs/heads/${BRANCH}"
-		git checkout --track "origin/${BRANCH}"
-	fi
+    if [ "${BUILD_TYPE}" == "production" ] && [ "${DRONE}" == "true" ]; then
+        # Ensure the branch gets actually downloaded...
+        git fetch origin "+refs/heads/${BRANCH}"
+        git checkout --track "origin/${BRANCH}"
+    fi
 
-	# git archive doesn't support submodules, which is not ideal.
-	# Workaround this by creating a new worktree from the upstream tag,
-	# fetch submodules, then create the orig file
-	temp_dir=$(mktemp -d)
-	orig_dir=${temp_dir}/source
+    # git archive doesn't support submodules, which is not ideal.
+    # Workaround this by creating a new worktree from the upstream tag,
+    # fetch submodules, then create the orig file
+    temp_dir=$(mktemp -d)
+    orig_dir=${temp_dir}/source
 
-	git worktree add ${orig_dir} upstream/${package_orig_version_tag}
-	cd ${orig_dir}
-	git submodule update --init --recursive
+    git worktree add ${orig_dir} upstream/${package_orig_version_tag}
+    cd ${orig_dir}
+    git submodule update --init --recursive
 
-	# Limitation of this approach is that we HAVE to check out eventual
-	# new submodules :(
-	if git checkout ${BRANCH} .gitmodules; then
-		git submodule init
+    # Limitation of this approach is that we HAVE to check out eventual
+    # new submodules :(
+    if git checkout ${BRANCH} .gitmodules; then
+        git submodule init
 
-		for submodule in $(git submodule status | awk '{ print $2 }'); do
-			git checkout ${BRANCH} ${submodule}
-		done
+        for submodule in $(git submodule status | awk '{ print $2 }'); do
+            git checkout ${BRANCH} ${submodule}
+        done
 
-		git submodule sync
-		git submodule update
-	fi
-	tar \
-		--exclude "./debian" \
-		--exclude "./.git" \
-		--exclude "./.gitmodules" \
-		--exclude "./.gitattributes" \
-		-cJf "${temp_dir}/${package_name}_${package_orig_version}.orig.tar.xz" .
+        git submodule sync
+        git submodule update
+    fi
+    tar \
+        --exclude "./debian" \
+        --exclude "./.git" \
+        --exclude "./.gitmodules" \
+        --exclude "./.gitattributes" \
+        -cJf "${temp_dir}/${package_name}_${package_orig_version}.orig.tar.xz" .
 
-	cd "${current_dir}"
+    cd "${current_dir}"
 
-	# Try to generate quilt patches
-	git add .
-	git config user.email "releng@localhost"
-	git config user.name "releng-build-package"
-	git commit -m "temporary commit"
+    # Try to generate quilt patches
+    git add .
+    git config user.email "releng@localhost"
+    git config user.name "releng-build-package"
+    git commit -m "temporary commit"
 
-	mkdir -p debian/patches
+    mkdir -p debian/patches
 
-	# Entirely replace the series file with our patches, we don't support
-	# an hybrid quilt+git configuration
-	git diff upstream/${package_orig_version_tag}..${BRANCH} \
-		--ignore-submodules=all \
-		-- . ':!debian/' ':!.gitmodules' \
-		> debian/patches/0001-autogenerated-by-releng-build-package.patch
+    # Entirely replace the series file with our patches, we don't support
+    # an hybrid quilt+git configuration
+    git diff upstream/${package_orig_version_tag}..${BRANCH} \
+        --ignore-submodules=all \
+        -- . ':!debian/' ':!.gitmodules' \
+        > debian/patches/0001-autogenerated-by-releng-build-package.patch
 
-	echo "0001-autogenerated-by-releng-build-package.patch" > debian/patches/series
+    echo "0001-autogenerated-by-releng-build-package.patch" > debian/patches/series
 
-	# Copy the new directory to ${orig_dir} as we're going to build
-	# there
-	rm -rf ${orig_dir}/debian
-	cp -Rav debian ${orig_dir}/debian
+    # Copy the new directory to ${orig_dir} as we're going to build
+    # there
+    rm -rf ${orig_dir}/debian
+    cp -Rav debian ${orig_dir}/debian
 
-	binary_diff="no"
-	for path in $(grep 'Binary files ' debian/patches/0001-autogenerated-by-releng-build-package.patch | awk '{sub(/^b\//, "", $5); print $5}'); do
-		cp -v "${current_dir}/${path}" "${orig_dir}/${path}"
-		echo "${path}" >> ${orig_dir}/debian/source/include-binaries
-		binary_diff="yes"
-	done
+    binary_diff="no"
+    for path in $(grep 'Binary files ' debian/patches/0001-autogenerated-by-releng-build-package.patch | awk '{sub(/^b\//, "", $5); print $5}'); do
+        cp -v "${current_dir}/${path}" "${orig_dir}/${path}"
+        echo "${path}" >> ${orig_dir}/debian/source/include-binaries
+        binary_diff="yes"
+    done
 
-	# Finally enter in ${orig_dir}
-	cd ${orig_dir}
+    # Finally enter in ${orig_dir}
+    cd ${orig_dir}
 
-	git apply --ignore-whitespace --reject --verbose ${orig_dir}/debian/patches/0001-autogenerated-by-releng-build-package.patch || true
+    git apply --ignore-whitespace --reject --verbose ${orig_dir}/debian/patches/0001-autogenerated-by-releng-build-package.patch || true
 fi
 
 git submodule update --init --recursive --depth 1
@@ -300,16 +300,16 @@ info "Building package"
 
 ARGS="--no-lintian -d -sa --no-sign --jobs=$(nproc)"
 if [ "${RELENG_FULL_BUILD}" == "yes" ]; then
-	# Full build, build binary and any arch, also apply patches manually
-	ARGS="${ARGS} --build=binary,any"
+    # Full build, build binary and any arch, also apply patches manually
+    ARGS="${ARGS} --build=binary,any"
 else
-	# Build only arch-dependent packages
-	ARGS="${ARGS} --build=any"
+    # Build only arch-dependent packages
+    ARGS="${ARGS} --build=any"
 fi
 
 # Support --host-arch (-aARCH in debuild, see DEBBUGS#898706)
 if [ -n "${RELENG_HOST_ARCH}" ]; then
-	ARGS="${ARGS} -a${RELENG_HOST_ARCH}"
+    ARGS="${ARGS} -a${RELENG_HOST_ARCH}"
 fi
 
 # Mark build as crossbuild for kernels
@@ -321,11 +321,11 @@ eval debuild "${ARGS}"
 
 # Move artifacts to the correct location if this is a non-native build
 if [ "${non_native}" == "yes" ]; then
-	info "Moving artifacts to correct location"
-	find ${temp_dir}/ \
-		-maxdepth 1 \
-		-type f \
-		-regextype posix-egrep \
-		-regex "${temp_dir}/.*\.(u?deb|tar\..*|dsc|buildinfo|changes)$" \
-		-exec mv {} ${current_dir}/.. \;
+    info "Moving artifacts to correct location"
+    find ${temp_dir}/ \
+        -maxdepth 1 \
+        -type f \
+        -regextype posix-egrep \
+        -regex "${temp_dir}/.*\.(u?deb|tar\..*|dsc|buildinfo|changes)$" \
+        -exec mv {} ${current_dir}/.. \;
 fi
