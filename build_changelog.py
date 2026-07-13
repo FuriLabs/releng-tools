@@ -37,7 +37,7 @@ import argparse
 
 from collections import OrderedDict, namedtuple
 
-CURRENT_ROLLING_SUITE = "trixie"
+CURRENT_ROLLING_SUITE = "forky"
 
 changelog_entry = namedtuple("ChangelogEntry", ["author", "mail", "contents", "date"])
 
