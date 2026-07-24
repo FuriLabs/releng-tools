@@ -9,6 +9,6 @@ source "$FLATPAK_DIR/io/invoke_flatpak_builder.sh"
 source "$FLATPAK_DIR/build_flatpak.sh"
 
 read_or_env FLATPAK_MANIFEST "Path to flatpak manifest"
-read_or_env ARCH "Target architecture (default: amd64)"
+read_or_env ARCH "Target architecture (default: x86_64)"
 
 build_flatpak

@@ -11,8 +11,10 @@ read_or_env() {
     fi
 
     local VALUE
-    read -p "$PROMPT: " VALUE
-    printf -v "$VAR_NAME" "%s" "$VALUE"
+    read -r -p "$PROMPT: " VALUE
+    if [[ -n "$VALUE" ]]; then
+        printf -v "$VAR_NAME" "%s" "$VALUE"
+    fi
 }
 
 die() {

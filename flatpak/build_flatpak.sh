@@ -1,6 +1,6 @@
 build_flatpak() {
     local manifest="${FLATPAK_MANIFEST:-${1:-}}"
-    local arch="${ARCH:-${2:-amd64}}"
+    local arch="${ARCH:-${2:-x86_64}}"
     local build_dir="${FLATPAK_BUILD_DIR:-/tmp/flatpak-build}"
     local repo_dir="${FLATPAK_REPO_DIR:-/tmp/flatpak-repo}"
     local suite="${FLATPAK_SUITE:-forky}"
@@ -16,7 +16,7 @@ build_flatpak() {
     fi
 
     local app_id
-    app_id=$(grep -m1 '^id:' "$manifest" | awk '{print $2}')
+    app_id=$(grep -m1 '^\(id\|app-id\):' "$manifest" | awk '{print $2}')
     if [[ -z "$app_id" ]]; then
         log "Could not parse app ID from manifest: $manifest"
         return 1
@@ -32,8 +32,8 @@ build_flatpak() {
 
     invoke_flatpak_builder \
         "$manifest" \
+        "$build_dir" \
         --arch="$arch" \
         --repo="$repo_dir" \
-        --install-deps-from=flathub \
-        "$build_dir"
+        --install-deps-from=flathub
 }

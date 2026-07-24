@@ -1,5 +1,6 @@
 invoke_flatpak_builder() {
     local manifest="$1"
-    shift
-    command flatpak-builder --force-clean "$@"
+    local build_dir="$2"
+    shift 2
+    command flatpak-builder --force-clean "$@" "$build_dir" "$manifest"
 }
